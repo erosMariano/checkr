@@ -55,10 +55,30 @@ const TodoApp = () => {
     newStatus: string
   ) => {
     const id = e.dataTransfer.getData('text/plain');
-    const updatedTasks = tasks.map((task) =>
-      task.id.toString() === id ? { ...task, status: newStatus } : task
-    );
-    setTasks(updatedTasks);
+    const draggedTask = tasks.find((task) => task.id.toString() === id);
+
+    if (draggedTask) {
+      const updatedTasks = tasks.map((task) =>
+        task.id.toString() === id ? { ...task, status: newStatus } : task
+      );
+
+      const newIndex = parseInt(e.currentTarget.id, 10);
+
+      if (draggedTask.status === newStatus) {
+        const newTasks = Array.from(updatedTasks);
+        const draggedIndex = newTasks.findIndex(
+          (task) => task.id === draggedTask.id
+        );
+
+        if (draggedIndex !== -1 && newIndex !== -1) {
+          const [removed] = newTasks.splice(draggedIndex, 1);
+          newTasks.splice(newIndex, 0, removed);
+          setTasks(newTasks);
+        }
+      } else {
+        setTasks(updatedTasks);
+      }
+    }
   };
 
   const handleDeleteColumn = (columnId: string) => {

@@ -9,9 +9,7 @@
   scrollbar-width: none; /* Firefox */
 }
 
-*::-webkit-scrollbar {
-  display: none;
-}
+
 textarea {
   resize: none;
   outline: none;
@@ -231,4 +229,11 @@ textarea {
 }
 .addTask img {
   width: 12px;
+}
+
+@media(max-width: 768px){
+  .container-task{
+    min-height: 100vh;
+    overflow-x: scroll;
+  }
 }
