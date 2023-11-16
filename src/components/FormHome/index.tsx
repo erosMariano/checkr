@@ -10,7 +10,6 @@ import Logo from '../../assets/logo.svg';
 
 import './styles.css';
 import { baseUrl } from '../../environments/baseUrl';
-// import { baseUrl } from '../../environments/baseUrl';
 
 function FormHome() {
   const notify = (text: string) =>
