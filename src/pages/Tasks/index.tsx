@@ -1,6 +1,7 @@
-import { useState } from 'react';
-
 import './styles.css';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+
 import Plus from '../../assets/icons/plus.svg';
 import Trash from '../../assets/icons/trash.svg';
 
@@ -18,6 +19,8 @@ interface Column {
 }
 
 const TodoApp = () => {
+  const validateUser = sessionStorage.getItem('@checkr');
+
   const [tasks, setTasks] = useState<Task[]>([
     { id: 1, text: 'Get groceries', status: 'todo' },
     { id: 2, text: 'Feed the dogs', status: 'todo' },
@@ -34,8 +37,6 @@ const TodoApp = () => {
     { id: 'doing', title: 'Doing' },
     { id: 'done', title: 'Done' }
   ]);
-
-  console.log(tasks);
 
   const [editableTask, setEditableTask] = useState<Task | null>(null);
 
@@ -169,48 +170,64 @@ const TodoApp = () => {
         </div>
       ));
 
-  return (
-    <>
-      <Header />
-      <div className="container-task ">
-        <div className="lanes">
-          {columns.map((column) => (
-            <div
-              style={{ position: 'relative' }}
-              key={column.id}
-              className="swim-lane"
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, column.id)}
-            >
-              <div className="heading">
-                <input
-                  type="text"
-                  value={column.title}
-                  onChange={(e) =>
-                    handleEditColumnTitle(column.id, e.target.value)
-                  }
-                />
+  if (validateUser) {
+    return (
+      <>
+        <Header />
+        <div className="container-task ">
+          <div className="lanes">
+            {columns.map((column) => (
+              <div
+                style={{ position: 'relative' }}
+                key={column.id}
+                className="swim-lane"
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, column.id)}
+              >
+                <div className="heading">
+                  <input
+                    type="text"
+                    value={column.title}
+                    onChange={(e) =>
+                      handleEditColumnTitle(column.id, e.target.value)
+                    }
+                  />
+                  <button
+                    className="deletar-card"
+                    onClick={() => handleDeleteColumn(column.id)}
+                  >
+                    <img src={Trash} alt="Icond deletar" />
+                  </button>
+                </div>
+                {renderTasks(column.id)}
                 <button
-                  className="deletar-card"
-                  onClick={() => handleDeleteColumn(column.id)}
+                  className="addTask"
+                  onClick={() => handleAddTask(column.id)}
                 >
-                  <img src={Trash} alt="Icond deletar" />
+                  <img src={Plus} alt="" />
+                  Add task
                 </button>
               </div>
-              {renderTasks(column.id)}
-              <button
-                className="addTask"
-                onClick={() => handleAddTask(column.id)}
-              >
-                <img src={Plus} alt="" />
-                Add task
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
-    </>
-  );
+      </>
+    );
+  } else {
+    return (
+      <main
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          height: '100vh'
+        }}
+      >
+        Crie uma conta e acesse essa área <Link to="/">HOME</Link>
+      </main>
+    );
+  }
 };
 
 export default TodoApp;

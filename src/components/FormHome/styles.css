@@ -90,7 +90,10 @@
   margin-top: 28px;
   cursor: pointer;
 }
-
+.signIn:disabled{
+  cursor: not-allowed;
+  background-color: #439a1f;
+}
 .or {
   display: flex;
 }
