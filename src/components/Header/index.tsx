@@ -7,7 +7,9 @@ import './styles.css';
 function Header() {
   return (
     <header className="header container">
-      <img src={Logo} alt="Logo cherkr" />
+      <Link to="/">
+        <img src={Logo} alt="Logo cherkr" />
+      </Link>
       <nav>
         <ul>
           <li>

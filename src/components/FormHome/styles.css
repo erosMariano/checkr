@@ -223,6 +223,16 @@
 
 @media(max-width: 768px){
   .header{
+    justify-content: space-between;
+  }
+  .header img{
+    margin-right: 0;
+  }
+  .or p::before, 
+  .or p::after{
+    display: none;
+  }
+  .header{
     margin-top: 0px;
   }
   .form-container form,

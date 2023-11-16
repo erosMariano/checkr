@@ -1,331 +1,196 @@
-import './styles.css';
+import { useState } from 'react';
 
-import { useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
+import './styles.css';
+import Plus from '../../assets/icons/plus.svg';
+import Trash from '../../assets/icons/trash.svg';
 
 import Header from '../../components/Header';
 
-import { Column, Id, Task } from '../types';
-import ColumnContainer from './ColumnContainer';
-import TaskCard from './TaskCard';
+interface Task {
+  id: number;
+  text: string;
+  status: string;
+}
 
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverEvent,
-  DragOverlay,
-  DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors
-} from '@dnd-kit/core';
-import { SortableContext, arrayMove } from '@dnd-kit/sortable';
+interface Column {
+  id: string;
+  title: string;
+}
 
-const defaultCols: Column[] = [
-  {
-    id: 'todo',
-    title: 'Todo'
-  },
-  {
-    id: 'doing',
-    title: 'Work in progress'
-  },
-  {
-    id: 'done',
-    title: 'Done'
-  }
-];
+const TodoApp = () => {
+  const [tasks, setTasks] = useState<Task[]>([
+    { id: 1, text: 'Get groceries', status: 'todo' },
+    { id: 2, text: 'Feed the dogs', status: 'todo' },
+    { id: 3, text: 'Mow the lawn', status: 'todo' },
+    { id: 4, text: 'Binge 80 hours of Game of Thrones', status: 'doing' },
+    {
+      id: 5,
+      text: 'Watch video of a man raising a grocery store lobster as a pet',
+      status: 'done'
+    }
+  ]);
+  const [columns, setColumns] = useState<Column[]>([
+    { id: 'todo', title: 'TODO' },
+    { id: 'doing', title: 'Doing' },
+    { id: 'done', title: 'Done' }
+  ]);
 
-const defaultTasks: Task[] = [
-  {
-    id: '1',
-    columnId: 'todo',
-    content: 'List admin APIs for dashboard'
-  },
-  {
-    id: '2',
-    columnId: 'todo',
-    content:
-      'Develop user registration functionality with OTP delivered on SMS after email confirmation and phone number confirmation'
-  },
-  {
-    id: '3',
-    columnId: 'doing',
-    content: 'Conduct security testing'
-  },
-  {
-    id: '4',
-    columnId: 'doing',
-    content: 'Analyze competitors'
-  },
-  {
-    id: '5',
-    columnId: 'done',
-    content: 'Create UI kit documentation'
-  },
-  {
-    id: '6',
-    columnId: 'done',
-    content: 'Dev meeting'
-  },
-  {
-    id: '7',
-    columnId: 'done',
-    content: 'Deliver dashboard prototype'
-  },
-  {
-    id: '8',
-    columnId: 'todo',
-    content: 'Optimize application performance'
-  },
-  {
-    id: '9',
-    columnId: 'todo',
-    content: 'Implement data validation'
-  },
-  {
-    id: '10',
-    columnId: 'todo',
-    content: 'Design database schema'
-  },
-  {
-    id: '11',
-    columnId: 'todo',
-    content: 'Integrate SSL web certificates into workflow'
-  },
-  {
-    id: '12',
-    columnId: 'doing',
-    content: 'Implement error logging and monitoring'
-  },
-  {
-    id: '13',
-    columnId: 'doing',
-    content: 'Design and implement responsive UI'
-  }
-];
+  console.log(tasks);
 
-function Tasks() {
-  const [columns, setColumns] = useState<Column[]>(defaultCols);
-  const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
+  const [editableTask, setEditableTask] = useState<Task | null>(null);
 
-  const [tasks, setTasks] = useState<Task[]>(defaultTasks);
+  const handleDragStart = (
+    e: React.DragEvent<HTMLParagraphElement>,
+    id: number
+  ) => {
+    e.dataTransfer.setData('text/plain', id.toString());
+  };
 
-  const [activeColumn, setActiveColumn] = useState<Column | null>(null);
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
 
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const handleDrop = (
+    e: React.DragEvent<HTMLDivElement>,
+    newStatus: string
+  ) => {
+    const id = e.dataTransfer.getData('text/plain');
+    const updatedTasks = tasks.map((task) =>
+      task.id.toString() === id ? { ...task, status: newStatus } : task
+    );
+    setTasks(updatedTasks);
+  };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 10
-      }
-    })
-  );
+  const handleDeleteColumn = (columnId: string) => {
+    const updatedColumns = columns.filter((column) => column.id !== columnId);
+    setColumns(updatedColumns);
+  };
+
+  const handleDeleteTask = (taskId: number) => {
+    const updatedTasks = tasks.filter((task) => task.id !== taskId);
+    setTasks(updatedTasks);
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditableTask(task);
+  };
+
+  const handleSaveEdit = (taskId: number, newText: string) => {
+    const updatedTasks = tasks.map((task) =>
+      task.id === taskId ? { ...task, text: newText } : task
+    );
+    setTasks(updatedTasks);
+    setEditableTask(null);
+  };
+  const handleEditColumnTitle = (columnId: string, newTitle: string) => {
+    const updatedColumns = columns.map((column) =>
+      column.id === columnId ? { ...column, title: newTitle } : column
+    );
+    setColumns(updatedColumns);
+  };
+
+  const handleAddTask = (columnId: string) => {
+    const newTaskId = tasks.length + 1; // Gera um novo ID para a nova task
+    const newTask: Task = {
+      id: newTaskId,
+      text: 'Nova Tarefa',
+      status: columnId
+    };
+    const updatedTasks = [...tasks, newTask]; // Adiciona a nova task à lista de tasks
+    setTasks(updatedTasks);
+  };
+
+  const renderTasks = (status: string) =>
+    tasks
+      .filter((task) => task.status === status)
+      .map((task) => (
+        <div key={task.id} className="task-container">
+          {editableTask && editableTask.id === task.id ? (
+            <div>
+              <input
+                type="text"
+                value={editableTask.text}
+                onChange={(e) =>
+                  setEditableTask({ ...editableTask, text: e.target.value })
+                }
+              />
+              <button
+                onClick={() =>
+                  handleSaveEdit(editableTask.id, editableTask.text)
+                }
+              >
+                Save
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div
+                className="task"
+                draggable="true"
+                onDragStart={(e) => handleDragStart(e, task.id)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, status)}
+              >
+                <p>{task.text}</p>
+                <div className="buttons_task">
+                  <button
+                    className="deletar"
+                    onClick={() => handleDeleteTask(task.id)}
+                  >
+                    Delete
+                  </button>
+                  <button className="edit" onClick={() => handleEditTask(task)}>
+                    Edit
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ));
 
   return (
-    <main>
+    <>
       <Header />
-      <div className="container-task" style={{ marginTop: 80 }}>
-        <DndContext
-          sensors={sensors}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          onDragOver={onDragOver}
-        >
-          <div>
-            <div className="box-containers">
-              <SortableContext items={columnsId}>
-                {columns.map((col) => (
-                  <ColumnContainer
-                    key={col.id}
-                    column={col}
-                    deleteColumn={deleteColumn}
-                    updateColumn={updateColumn}
-                    createTask={createTask}
-                    deleteTask={deleteTask}
-                    updateTask={updateTask}
-                    tasks={tasks.filter((task) => task.columnId === col.id)}
-                  />
-                ))}
-              </SortableContext>
-            </div>
-            <button
-              className="addColumn"
-              onClick={() => {
-                createNewColumn();
-              }}
+      <div className="container-task ">
+        <div className="lanes">
+          {columns.map((column) => (
+            <div
+              style={{ position: 'relative' }}
+              key={column.id}
+              className="swim-lane"
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, column.id)}
             >
-              Add Column
-            </button>
-          </div>
-
-          {createPortal(
-            <DragOverlay>
-              {activeColumn && (
-                <ColumnContainer
-                  column={activeColumn}
-                  deleteColumn={deleteColumn}
-                  updateColumn={updateColumn}
-                  createTask={createTask}
-                  deleteTask={deleteTask}
-                  updateTask={updateTask}
-                  tasks={tasks.filter(
-                    (task) => task.columnId === activeColumn.id
-                  )}
+              <div className="heading">
+                <input
+                  type="text"
+                  value={column.title}
+                  onChange={(e) =>
+                    handleEditColumnTitle(column.id, e.target.value)
+                  }
                 />
-              )}
-              {activeTask && (
-                <TaskCard
-                  task={activeTask}
-                  deleteTask={deleteTask}
-                  updateTask={updateTask}
-                />
-              )}
-            </DragOverlay>,
-            document.body
-          )}
-        </DndContext>
+                <button
+                  className="deletar-card"
+                  onClick={() => handleDeleteColumn(column.id)}
+                >
+                  <img src={Trash} alt="Icond deletar" />
+                </button>
+              </div>
+              {renderTasks(column.id)}
+              <button
+                className="addTask"
+                onClick={() => handleAddTask(column.id)}
+              >
+                <img src={Plus} alt="" />
+                Add task
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
-    </main>
+    </>
   );
+};
 
-  function createTask(columnId: Id) {
-    const newTask: Task = {
-      id: generateId(),
-      columnId,
-      content: `Task ${tasks.length + 1}`
-    };
-
-    setTasks([...tasks, newTask]);
-  }
-
-  function deleteTask(id: Id) {
-    const newTasks = tasks.filter((task) => task.id !== id);
-    setTasks(newTasks);
-  }
-
-  function updateTask(id: Id, content: string) {
-    const newTasks = tasks.map((task) => {
-      if (task.id !== id) return task;
-      return { ...task, content };
-    });
-
-    setTasks(newTasks);
-  }
-
-  function createNewColumn() {
-    const columnToAdd: Column = {
-      id: generateId(),
-      title: `Column ${columns.length + 1}`
-    };
-
-    setColumns([...columns, columnToAdd]);
-  }
-
-  function deleteColumn(id: Id) {
-    const filteredColumns = columns.filter((col) => col.id !== id);
-    setColumns(filteredColumns);
-
-    const newTasks = tasks.filter((t) => t.columnId !== id);
-    setTasks(newTasks);
-  }
-
-  function updateColumn(id: Id, title: string) {
-    const newColumns = columns.map((col) => {
-      if (col.id !== id) return col;
-      return { ...col, title };
-    });
-
-    setColumns(newColumns);
-  }
-
-  function onDragStart(event: DragStartEvent) {
-    if (event.active.data.current?.type === 'Column') {
-      setActiveColumn(event.active.data.current.column);
-      return;
-    }
-
-    if (event.active.data.current?.type === 'Task') {
-      setActiveTask(event.active.data.current.task);
-      return;
-    }
-  }
-
-  function onDragEnd(event: DragEndEvent) {
-    setActiveColumn(null);
-    setActiveTask(null);
-
-    const { active, over } = event;
-    if (!over) return;
-
-    const activeId = active.id;
-    const overId = over.id;
-
-    if (activeId === overId) return;
-
-    const isActiveAColumn = active.data.current?.type === 'Column';
-    if (!isActiveAColumn) return;
-
-    console.log('DRAG END');
-
-    setColumns((columns) => {
-      const activeColumnIndex = columns.findIndex((col) => col.id === activeId);
-
-      const overColumnIndex = columns.findIndex((col) => col.id === overId);
-
-      return arrayMove(columns, activeColumnIndex, overColumnIndex);
-    });
-  }
-
-  function onDragOver(event: DragOverEvent) {
-    const { active, over } = event;
-    if (!over) return;
-
-    const activeId = active.id;
-    const overId = over.id;
-
-    if (activeId === overId) return;
-
-    const isActiveATask = active.data.current?.type === 'Task';
-    const isOverATask = over.data.current?.type === 'Task';
-
-    if (!isActiveATask) return;
-
-    // Im dropping a Task over another Task
-    if (isActiveATask && isOverATask) {
-      setTasks((tasks) => {
-        const activeIndex = tasks.findIndex((t) => t.id === activeId);
-        const overIndex = tasks.findIndex((t) => t.id === overId);
-
-        if (tasks[activeIndex].columnId != tasks[overIndex].columnId) {
-          // Fix introduced after video recording
-          tasks[activeIndex].columnId = tasks[overIndex].columnId;
-          return arrayMove(tasks, activeIndex, overIndex - 1);
-        }
-
-        return arrayMove(tasks, activeIndex, overIndex);
-      });
-    }
-
-    const isOverAColumn = over.data.current?.type === 'Column';
-
-    // Im dropping a Task over a column
-    if (isActiveATask && isOverAColumn) {
-      setTasks((tasks) => {
-        const activeIndex = tasks.findIndex((t) => t.id === activeId);
-
-        tasks[activeIndex].columnId = overId;
-        console.log('DROPPING TASK OVER COLUMN', { activeIndex });
-        return arrayMove(tasks, activeIndex, activeIndex);
-      });
-    }
-  }
-}
-
-function generateId() {
-  /* Generate a random number between 0 and 10000 */
-  return Math.floor(Math.random() * 10001);
-}
-
-export default Tasks;
+export default TodoApp;
