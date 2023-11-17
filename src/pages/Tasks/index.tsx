@@ -7,6 +7,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import Plus from '../../assets/icons/plus.svg';
 
 import Header from '../../components/Header';
+import Message from '../../components/Message';
 import Modal from '../../components/Modal';
 
 import { baseUrl } from '../../environments/baseUrl';
@@ -31,6 +32,8 @@ const TodoApp = () => {
     });
 
   const validateUser = sessionStorage.getItem('@checkr');
+  const [message, setMessage] = useState('Salvando');
+  const [activeMessage, setActiveMessage] = useState(false);
   const idUser = validateUser && JSON.parse(validateUser).id;
   const queryClient = useQueryClient();
 
@@ -46,7 +49,6 @@ const TodoApp = () => {
 
   useEffect(() => {
     if (data && data.tasks) {
-      console.log(data.tasks);
       setTasks(data.tasks);
     }
   }, [data]);
@@ -74,6 +76,9 @@ const TodoApp = () => {
     e: React.DragEvent<HTMLDivElement>,
     newStatus: string
   ) => {
+    setMessage('Movendo...');
+    setActiveMessage(true);
+    e.preventDefault();
     const id = e.dataTransfer.getData('text/plain');
     const draggedTask = tasks.find((task) => task.id.toString() === id);
 
@@ -87,12 +92,10 @@ const TodoApp = () => {
           (el) => el.id.toString() === id
         );
 
-        console.log(newTaskUpdate);
         const data = {
           description: newTaskUpdate.description,
           status: newTaskUpdate.status
         };
-        console.log(newTaskUpdate.id);
 
         const newTaskBD = await fetch(
           `${baseUrl}/users/${idUser}/tasks/${newTaskUpdate.id}`,
@@ -128,6 +131,8 @@ const TodoApp = () => {
       } catch (error) {
         notify('Erro ao salvar no banco');
         console.log(error);
+      } finally {
+        setActiveMessage(false);
       }
     }
   };
@@ -137,16 +142,11 @@ const TodoApp = () => {
     setTasks(updatedTasks);
 
     try {
-      const deleteItem = await fetch(
-        `${baseUrl}/users/${idUser}/tasks/${taskId}`,
-        {
-          method: 'DELETE'
-        }
-      );
-
-      console.log(deleteItem);
+      await fetch(`${baseUrl}/users/${idUser}/tasks/${taskId}`, {
+        method: 'DELETE'
+      });
     } catch (error) {
-      notify('Erro ao salvar no banco');
+      notify('Erro ao deletar do banco');
       console.log(error);
     }
   };
@@ -157,6 +157,8 @@ const TodoApp = () => {
 
   const handleSaveEdit = async (taskId: number, newText: string) => {
     try {
+      setMessage('Salvando...');
+      setActiveMessage(true);
       const updatedTasks = tasks.map((task) =>
         task.id === taskId ? { ...task, description: newText } : task
       );
@@ -186,10 +188,14 @@ const TodoApp = () => {
     } catch (error) {
       notify('Erro ao salvar no banco');
       console.log(error);
+    } finally {
+      setActiveMessage(false);
     }
   };
 
   const handleAddTask = async (columnId: string) => {
+    setMessage('Criando');
+    setActiveMessage(true);
     const newTaskId = tasks.length + 1;
 
     const newTask: Task = {
@@ -221,6 +227,8 @@ const TodoApp = () => {
     } catch (error) {
       notify('Erro ao salvar no banco');
       console.log(error);
+    } finally {
+      setActiveMessage(false);
     }
   };
 
@@ -252,7 +260,6 @@ const TodoApp = () => {
           ) : (
             <div>
               <div
-                onTouchStart={(e) => e.preventDefault()}
                 className="task"
                 draggable="true"
                 onDragStart={(e) => handleDragStart(e, task.id)}
@@ -280,6 +287,7 @@ const TodoApp = () => {
   if (validateUser) {
     return (
       <main style={{ position: 'relative' }}>
+        {activeMessage && <Message label={message} />}
         <ToastContainer
           position="top-right"
           autoClose={5000}

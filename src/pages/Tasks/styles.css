@@ -121,7 +121,6 @@ textarea {
 }
 
 .task {
-  touch-action: none;
   background: #f4f2ff;
   color: black;
 
