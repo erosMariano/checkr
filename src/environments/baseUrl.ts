@@ -1,1 +1,1 @@
-export const baseUrl = 'http://localhost:3333';
+export const baseUrl = import.meta.env.VITE_API_KEY;
