@@ -1,5 +1,6 @@
 import './styles.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 
 import Plus from '../../assets/icons/plus.svg';
@@ -7,9 +8,11 @@ import Trash from '../../assets/icons/trash.svg';
 
 import Header from '../../components/Header';
 
+import { baseUrl } from '../../environments/baseUrl';
+
 interface Task {
   id: number;
-  text: string;
+  description: string;
   status: string;
 }
 
@@ -19,19 +22,29 @@ interface Column {
 }
 
 const TodoApp = () => {
-  const validateUser = sessionStorage.getItem('@checkr');
+  // Validar ordem de criação, so fazer a acção apos salvar no banco
+  // Validar fluxo, está meio bugado
 
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: 1, text: 'Get groceries', status: 'todo' },
-    { id: 2, text: 'Feed the dogs', status: 'todo' },
-    { id: 3, text: 'Mow the lawn', status: 'todo' },
-    { id: 4, text: 'Binge 80 hours of Game of Thrones', status: 'doing' },
-    {
-      id: 5,
-      text: 'Watch video of a man raising a grocery store lobster as a pet',
-      status: 'done'
+  const validateUser = sessionStorage.getItem('@checkr');
+  const idUser = validateUser && JSON.parse(validateUser).id;
+
+  const fetchTasks = async () => {
+    const response = await fetch(`${baseUrl}/users/${idUser}/tasks`);
+    const data = await response.json();
+    return data;
+  };
+
+  const { data } = useQuery('tasks', fetchTasks);
+
+  const [tasks, setTasks] = useState<Task[]>([]);
+
+  useEffect(() => {
+    if (data && data.tasks) {
+      console.log(data.tasks);
+      setTasks(data.tasks);
     }
-  ]);
+  }, [data]);
+
   const [columns, setColumns] = useState<Column[]>([
     { id: 'todo', title: 'TODO' },
     { id: 'doing', title: 'Doing' },
@@ -51,7 +64,7 @@ const TodoApp = () => {
     e.preventDefault();
   };
 
-  const handleDrop = (
+  const handleDrop = async (
     e: React.DragEvent<HTMLDivElement>,
     newStatus: string
   ) => {
@@ -63,21 +76,52 @@ const TodoApp = () => {
         task.id.toString() === id ? { ...task, status: newStatus } : task
       );
 
-      const newIndex = parseInt(e.currentTarget.id, 10);
-
-      if (draggedTask.status === newStatus) {
-        const newTasks = Array.from(updatedTasks);
-        const draggedIndex = newTasks.findIndex(
-          (task) => task.id === draggedTask.id
+      try {
+        const [newTaskUpdate] = updatedTasks.filter(
+          (el) => el.id.toString() === id
         );
 
-        if (draggedIndex !== -1 && newIndex !== -1) {
-          const [removed] = newTasks.splice(draggedIndex, 1);
-          newTasks.splice(newIndex, 0, removed);
-          setTasks(newTasks);
+        console.log(newTaskUpdate);
+        const data = {
+          description: newTaskUpdate.description,
+          status: newTaskUpdate.status
+        };
+        console.log(newTaskUpdate.id);
+
+        const newTaskBD = await fetch(
+          `${baseUrl}/users/${idUser}/tasks/${newTaskUpdate.id}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+
+            body: JSON.stringify(data)
+          }
+        );
+
+        if (newTaskBD.status === 200) {
+          const newIndex = parseInt(String(newTaskUpdate.id), 10);
+          if (draggedTask.status === newStatus) {
+            const newTasks = Array.from(updatedTasks);
+            const draggedIndex = newTasks.findIndex(
+              (task) => task.id === draggedTask.id
+            );
+
+            if (draggedIndex !== -1 && newIndex !== -1) {
+              const [removed] = newTasks.splice(draggedIndex, 1);
+              newTasks.splice(newIndex, 0, removed);
+              setTasks(newTasks);
+            }
+          } else {
+            setTasks(updatedTasks);
+          }
+        } else {
+          console.log('Exibir erro');
         }
-      } else {
-        setTasks(updatedTasks);
+      } catch (error) {
+        console.log('Exibir erro');
+        console.log(error);
       }
     }
   };
@@ -87,22 +131,63 @@ const TodoApp = () => {
     setColumns(updatedColumns);
   };
 
-  const handleDeleteTask = (taskId: number) => {
+  const handleDeleteTask = async (taskId: number) => {
     const updatedTasks = tasks.filter((task) => task.id !== taskId);
     setTasks(updatedTasks);
+
+    try {
+      const deleteItem = await fetch(
+        `${baseUrl}/users/${idUser}/tasks/${taskId}`,
+        {
+          method: 'DELETE'
+        }
+      );
+
+      console.log(deleteItem);
+    } catch (error) {
+      console.log('Exibir erro');
+      console.log(error);
+    }
   };
 
   const handleEditTask = (task: Task) => {
     setEditableTask(task);
   };
 
-  const handleSaveEdit = (taskId: number, newText: string) => {
-    const updatedTasks = tasks.map((task) =>
-      task.id === taskId ? { ...task, text: newText } : task
-    );
-    setTasks(updatedTasks);
-    setEditableTask(null);
+  const handleSaveEdit = async (taskId: number, newText: string) => {
+    try {
+      const updatedTasks = tasks.map((task) =>
+        task.id === taskId ? { ...task, description: newText } : task
+      );
+
+      const [elementModify] = tasks.filter((el) => el.id === taskId);
+
+      const data = {
+        description: newText,
+        status: elementModify.status
+      };
+
+      const newTaskBD = await fetch(
+        `${baseUrl}/users/${idUser}/tasks/${taskId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+
+          body: JSON.stringify(data)
+        }
+      );
+      if (newTaskBD.status === 200) {
+        setTasks(updatedTasks);
+        setEditableTask(null);
+      }
+    } catch (error) {
+      console.log('Exibir erro');
+      console.log(error);
+    }
   };
+
   const handleEditColumnTitle = (columnId: string, newTitle: string) => {
     const updatedColumns = columns.map((column) =>
       column.id === columnId ? { ...column, title: newTitle } : column
@@ -110,34 +195,60 @@ const TodoApp = () => {
     setColumns(updatedColumns);
   };
 
-  const handleAddTask = (columnId: string) => {
-    const newTaskId = tasks.length + 1; // Gera um novo ID para a nova task
+  const handleAddTask = async (columnId: string) => {
+    const newTaskId = tasks.length + 1;
+
     const newTask: Task = {
       id: newTaskId,
-      text: 'Nova Tarefa',
+      description: 'Nova Tarefa',
       status: columnId
     };
-    const updatedTasks = [...tasks, newTask]; // Adiciona a nova task à lista de tasks
-    setTasks(updatedTasks);
+
+    try {
+      const [status] = columns.filter((el) => el.id === columnId);
+      const data = {
+        description: 'Nova Tarefa',
+        status: status.title
+      };
+      const newTaskBD = await fetch(`${baseUrl}/users/${idUser}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify(data)
+      });
+
+      if (newTaskBD.status === 201) {
+        const updatedTasks = [...tasks, newTask];
+        setTasks(updatedTasks);
+      }
+    } catch (error) {
+      console.log('Exibir erro');
+      console.log(error);
+    }
   };
 
   const renderTasks = (status: string) =>
     tasks
-      .filter((task) => task.status === status)
+      .filter((task) => String(task.status).toLocaleLowerCase() === status)
       .map((task) => (
         <div key={task.id} className="task-container">
           {editableTask && editableTask.id === task.id ? (
             <div>
               <input
                 type="text"
-                value={editableTask.text}
+                value={editableTask.description}
                 onChange={(e) =>
-                  setEditableTask({ ...editableTask, text: e.target.value })
+                  setEditableTask({
+                    ...editableTask,
+                    description: e.target.value
+                  })
                 }
               />
               <button
                 onClick={() =>
-                  handleSaveEdit(editableTask.id, editableTask.text)
+                  handleSaveEdit(editableTask.id, editableTask.description)
                 }
               >
                 Save
@@ -152,7 +263,7 @@ const TodoApp = () => {
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, status)}
               >
-                <p>{task.text}</p>
+                <p>{task.description}</p>
                 <div className="buttons_task">
                   <button
                     className="deletar"
