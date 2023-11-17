@@ -1,1 +1,1 @@
-export const baseUrl = 'https://checkr-backend.vercel.app/';
+export const baseUrl = 'https://checkr-backend.vercel.app';
