@@ -206,7 +206,7 @@ function FormHome() {
             <img src={EyeIcon} alt="" />
           </label>
           <button disabled={isBusy} className="signIn">
-            Sign in
+            {isBusy ? 'Entrando...' : 'Sign in'}
           </button>
           <div className="or">
             <p>Or continue with</p>
