@@ -211,7 +211,7 @@ function FormHome() {
           <div className="or">
             <p>Or continue with</p>
           </div>
-          <button className="google-button">
+          <button type="button" className="google-button">
             <img src={GoogleIcon} alt="" /> Login with Google
           </button>
         </form>
@@ -276,7 +276,7 @@ function FormHome() {
           <div className="or">
             <p>Or continue with</p>
           </div>
-          <button className="google-button">
+          <button type="button" className="google-button">
             <img src={GoogleIcon} alt="" /> Login with Google
           </button>
         </form>
