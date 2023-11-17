@@ -63,6 +63,7 @@ const TodoApp = () => {
     e: React.DragEvent<HTMLParagraphElement>,
     id: number
   ) => {
+    e.preventDefault();
     e.dataTransfer.setData('text/plain', id.toString());
   };
 
