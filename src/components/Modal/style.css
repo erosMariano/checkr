@@ -1,3 +1,4 @@
+
 .modal {
   position: fixed;
   z-index: 10;
@@ -55,4 +56,10 @@
   border: none;
   margin-top: 28px;
   cursor: pointer;
+}
+
+@media(min-width: 768px){
+  .modal{
+    display: none;
+  }
 }
