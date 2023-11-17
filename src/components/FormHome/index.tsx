@@ -271,7 +271,7 @@ function FormHome() {
             />
           </label>
           <button className="signIn" type="submit" disabled={isBusy}>
-            {isBusy ? 'Entrando...' : 'Sign in'}
+            {isBusy ? 'Registrando...' : 'Registre-se'}
           </button>
           <div className="or">
             <p>Or continue with</p>
