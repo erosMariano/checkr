@@ -252,6 +252,7 @@ const TodoApp = () => {
           ) : (
             <div>
               <div
+                onTouchStart={(e) => e.preventDefault()}
                 className="task"
                 draggable="true"
                 onDragStart={(e) => handleDragStart(e, task.id)}
