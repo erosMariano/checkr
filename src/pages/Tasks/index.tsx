@@ -1,12 +1,13 @@
 import './styles.css';
 import { useEffect, useState } from 'react';
-import { useQuery } from 'react-query';
+import { useQuery, useQueryClient } from 'react-query';
 import { Link } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
 
 import Plus from '../../assets/icons/plus.svg';
-import Trash from '../../assets/icons/trash.svg';
 
 import Header from '../../components/Header';
+import Modal from '../../components/Modal';
 
 import { baseUrl } from '../../environments/baseUrl';
 
@@ -16,17 +17,22 @@ interface Task {
   status: string;
 }
 
-interface Column {
-  id: string;
-  title: string;
-}
-
 const TodoApp = () => {
-  // Validar ordem de criação, so fazer a acção apos salvar no banco
-  // Validar fluxo, está meio bugado
+  const notify = (text: string) =>
+    toast.error(text, {
+      position: 'top-right',
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: 'light'
+    });
 
   const validateUser = sessionStorage.getItem('@checkr');
   const idUser = validateUser && JSON.parse(validateUser).id;
+  const queryClient = useQueryClient();
 
   const fetchTasks = async () => {
     const response = await fetch(`${baseUrl}/users/${idUser}/tasks`);
@@ -45,11 +51,11 @@ const TodoApp = () => {
     }
   }, [data]);
 
-  const [columns, setColumns] = useState<Column[]>([
-    { id: 'todo', title: 'TODO' },
-    { id: 'doing', title: 'Doing' },
-    { id: 'done', title: 'Done' }
-  ]);
+  const columns = [
+    { id: 'tarefas', title: 'Tarefas' },
+    { id: 'fazendo', title: 'Fazendo' },
+    { id: 'concluídas', title: 'Concluídas' }
+  ];
 
   const [editableTask, setEditableTask] = useState<Task | null>(null);
 
@@ -117,18 +123,13 @@ const TodoApp = () => {
             setTasks(updatedTasks);
           }
         } else {
-          console.log('Exibir erro');
+          notify('Erro ao salvar no banco');
         }
       } catch (error) {
-        console.log('Exibir erro');
+        notify('Erro ao salvar no banco');
         console.log(error);
       }
     }
-  };
-
-  const handleDeleteColumn = (columnId: string) => {
-    const updatedColumns = columns.filter((column) => column.id !== columnId);
-    setColumns(updatedColumns);
   };
 
   const handleDeleteTask = async (taskId: number) => {
@@ -145,7 +146,7 @@ const TodoApp = () => {
 
       console.log(deleteItem);
     } catch (error) {
-      console.log('Exibir erro');
+      notify('Erro ao salvar no banco');
       console.log(error);
     }
   };
@@ -183,16 +184,9 @@ const TodoApp = () => {
         setEditableTask(null);
       }
     } catch (error) {
-      console.log('Exibir erro');
+      notify('Erro ao salvar no banco');
       console.log(error);
     }
-  };
-
-  const handleEditColumnTitle = (columnId: string, newTitle: string) => {
-    const updatedColumns = columns.map((column) =>
-      column.id === columnId ? { ...column, title: newTitle } : column
-    );
-    setColumns(updatedColumns);
   };
 
   const handleAddTask = async (columnId: string) => {
@@ -222,9 +216,10 @@ const TodoApp = () => {
       if (newTaskBD.status === 201) {
         const updatedTasks = [...tasks, newTask];
         setTasks(updatedTasks);
+        queryClient.invalidateQueries('tasks');
       }
     } catch (error) {
-      console.log('Exibir erro');
+      notify('Erro ao salvar no banco');
       console.log(error);
     }
   };
@@ -283,9 +278,23 @@ const TodoApp = () => {
 
   if (validateUser) {
     return (
-      <>
+      <main style={{ position: 'relative' }}>
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+
         <Header />
-        <div className="container-task ">
+        <Modal />
+        <div className="container-task">
           <div className="lanes">
             {columns.map((column) => (
               <div
@@ -296,19 +305,7 @@ const TodoApp = () => {
                 onDrop={(e) => handleDrop(e, column.id)}
               >
                 <div className="heading">
-                  <input
-                    type="text"
-                    value={column.title}
-                    onChange={(e) =>
-                      handleEditColumnTitle(column.id, e.target.value)
-                    }
-                  />
-                  <button
-                    className="deletar-card"
-                    onClick={() => handleDeleteColumn(column.id)}
-                  >
-                    <img src={Trash} alt="Icond deletar" />
-                  </button>
+                  <h3>{column.title}</h3>
                 </div>
                 {renderTasks(column.id)}
                 <button
@@ -322,7 +319,7 @@ const TodoApp = () => {
             ))}
           </div>
         </div>
-      </>
+      </main>
     );
   } else {
     return (

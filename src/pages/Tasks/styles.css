@@ -9,7 +9,6 @@
   scrollbar-width: none; /* Firefox */
 }
 
-
 textarea {
   resize: none;
   outline: none;
@@ -85,7 +84,7 @@ textarea {
   display: flex;
   align-items: center;
 }
-.heading input {
+.heading h3 {
   border: none;
   background-color: transparent;
   outline: none;
@@ -231,9 +230,17 @@ textarea {
   width: 12px;
 }
 
-@media(max-width: 768px){
-  .container-task{
-    min-height: 100vh;
+@media (max-width: 768px) {
+  .container-task {
+    min-height: 80vh;
     overflow-x: scroll;
+    padding: 0;
+  }
+  .lanes {
+    width: max-content;
+    padding-right: 32px;
+  }
+  .swim-lane{
+    width: 300px;
   }
 }
